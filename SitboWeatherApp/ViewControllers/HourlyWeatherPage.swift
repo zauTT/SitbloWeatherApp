@@ -1,3 +1,11 @@
+//
+//  HourlyWeatherPage.swift
+//  SitboWeatherApp
+//
+//  Created by Giorgi Zautashvili on 07.07.25.
+//
+
+
 
 import UIKit
 

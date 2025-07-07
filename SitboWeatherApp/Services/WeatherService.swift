@@ -1,6 +1,6 @@
 //
 //  WeatherService.swift
-//  SitboWeather
+//  SitboWeatherApp
 //
 //  Created by Giorgi Zautashvili on 01.07.25.
 //
