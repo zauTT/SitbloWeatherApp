@@ -5,7 +5,6 @@
 //  Created by Giorgi Zautashvili on 01.07.25.
 //
 
-
 import Foundation
 
 class WeatherService {

@@ -6,28 +6,24 @@
 //
 
 
-
 import UIKit
 
 class CurrentWeatherView: UIView {
     
     private let locationIconView: UIImageView = {
         let imageView = UIImageView(image: UIImage(systemName: "location.fill"))
-        imageView.tintColor = .white
+        imageView.tintColor = .label
         imageView.contentMode = .scaleAspectFit
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            imageView.widthAnchor.constraint(equalToConstant: 16),
-            imageView.heightAnchor.constraint(equalToConstant: 16)
-        ])
         return imageView
     }()
     
     private let cityLabel: UILabel = {
        let label = UILabel()
-        label.font = .systemFont(ofSize: 18, weight: .semibold)
-        label.textColor = .white
+        label.font = .systemFont(ofSize: 18, weight: .thin)
+        label.textColor = .label
         label.text = "Loading..."
+        label.textAlignment = .center
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -35,23 +31,19 @@ class CurrentWeatherView: UIView {
     
     private let temperatureLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 42, weight: .bold)
-        label.textColor = .white
+        label.font = UIFont(name: "HelveticaNeue-UltraLight", size: 56)
+        label.textColor = .label
         label.text = "--°"
+        label.textAlignment = .center
         return label
     }()
     
     private let conditionLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 18, weight: .regular)
-        label.textColor = .white
+        label.font = UIFont.systemFont(ofSize: 18, weight: .thin)
+        label.textColor = .label
         label.text = "Condition"
         return label
-    }()
-    
-    private let blurView: UIVisualEffectView = {
-       let blur = UIBlurEffect(style: .systemThinMaterialDark)
-        return UIVisualEffectView(effect: blur)
     }()
     
     private let locationStack = UIStackView()
@@ -68,15 +60,6 @@ class CurrentWeatherView: UIView {
     }
     
     private func setupLayout() {
-        addSubview(blurView)
-        blurView.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            blurView.topAnchor.constraint(equalTo: topAnchor),
-            blurView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            blurView.trailingAnchor.constraint(equalTo: trailingAnchor)
-        ])
         
         locationStack.axis = .horizontal
         locationStack.spacing = 4
@@ -85,7 +68,7 @@ class CurrentWeatherView: UIView {
         locationStack.addArrangedSubview(cityLabel)
         
         let stack = UIStackView(arrangedSubviews: [locationStack, temperatureLabel, conditionLabel])
-
+        
         stack.axis = .vertical
         stack.spacing = 4
         stack.alignment = .center

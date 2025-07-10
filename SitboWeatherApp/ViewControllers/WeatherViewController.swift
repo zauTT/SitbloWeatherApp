@@ -11,10 +11,39 @@ import UIKit
 class WeatherViewController: UIViewController {
     
     private let viewModel = WeatherViewModel()
-    private var pageViewController: UIPageViewController!
-    private var pages: [UIViewController] = []
     private let locationManager = CLLocationManager()
+    private let currentWeather = CurrentWeatherView()
     
+    private let hourlyCellName: UILabel = {
+       let name = UILabel()
+        name.font = UIFont.systemFont(ofSize: 14, weight: .bold)
+        name.textColor = .label
+        name.text = "Hourly Forecast"
+        name.textAlignment = .center
+        name.translatesAutoresizingMaskIntoConstraints = false
+        return name
+    }()
+    
+    private let hourlyContainerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    private let hourlyCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumInteritemSpacing = 8
+        layout.minimumLineSpacing = 8
+        layout.itemSize = CGSize(width: 60, height: 80)
+
+        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        cv.translatesAutoresizingMaskIntoConstraints = false
+        cv.showsHorizontalScrollIndicator = false
+        cv.backgroundColor = .clear
+        return cv
+    }()
+
     private let searchBar: UISearchBar = {
         let sb = UISearchBar()
         sb.placeholder = "Search city..."
@@ -25,17 +54,24 @@ class WeatherViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .clear
         
-        setupPageViewController()
+        setupCurrentWeather()
+        setupHourlyCellName()
+        setupHourlyCollectionView()
+        hourlyCollectionView.dataSource = self
+
         setupSearchBar()
         setupLocationManager()
         
         viewModel.onUpdate = { [weak self] in
             DispatchQueue.main.async {
-                self?.setupPages()
+                self?.updateCurrentWeatherUI()
+                self?.hourlyCollectionView.reloadData()
             }
         }
+        
+        hourlyCollectionView.register(HourlyForecastCell.self, forCellWithReuseIdentifier: HourlyForecastCell.reuseIdentifier)
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -45,57 +81,60 @@ class WeatherViewController: UIViewController {
         view.addGestureRecognizer(tapGesture)
     }
     
-    private func setupPageViewController() {
-        pageViewController = UIPageViewController(
-            transitionStyle: .scroll,
-            navigationOrientation: .horizontal,
-            options: nil
-        )
-        pageViewController.dataSource = self
-        pageViewController.delegate = self
-        
-        addChild(pageViewController)
-        view.addSubview(pageViewController.view)
-        pageViewController.view.translatesAutoresizingMaskIntoConstraints = false
+    private func setupCurrentWeather() {
+        view.addSubview(currentWeather)
+        currentWeather.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            pageViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            pageViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            pageViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            pageViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            currentWeather.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            currentWeather.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            currentWeather.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            currentWeather.heightAnchor.constraint(equalToConstant: 160)
         ])
-        
-        pageViewController.didMove(toParent: self)
     }
     
-    private func setupPages() {
-        guard !viewModel.hourlyWeather.isEmpty else { return }
-        
-        let currentVC = CurrentWeatherPageViewController()
-
-        let firstHour = viewModel.hourlyWeather[0]
+    private func updateCurrentWeatherUI() {
+        guard let firstHour = viewModel.hourlyWeather.first else { return }
         let city = viewModel.currentCity
         let temp = "\(Int(firstHour.data.instant.details.airTemperature))°"
         let conditionCode = firstHour.data.next1Hours?.summary?.symbolCode ?? ""
         let condition = conditionCode.replacingOccurrences(of: "_", with: " ").capitalized
 
-        currentVC.configure(city: city, temperature: temp, condition: condition)
+        currentWeather.configure(city: city, temperature: temp, condition: condition)
         
-        let hourlyPages = viewModel.hourlyWeather.map { ts -> HourlyWeatherPage in
-            let time = viewModel.timeString(from: ts.time)
-            let temp = "\(Int(ts.data.instant.details.airTemperature))°"
-            let icon = viewModel.systemImageName(for: ts.data.next1Hours?.summary?.symbolCode)
-            
-            let page = HourlyWeatherPage(time: time, temperature: temp, iconName: icon)
-            page.backgroundColor = viewModel.backgroundColor(for: ts.data.next1Hours?.summary?.symbolCode ?? "")
-            return page
-        }
-        
-        pages = [currentVC] + hourlyPages
-        
-        pageViewController.setViewControllers([currentVC], direction: .forward, animated: false)
-        view.backgroundColor = currentVC.view.backgroundColor
+        view.backgroundColor = viewModel.backgroundColor(for: conditionCode)
     }
+    
+    private func setupHourlyCellName() {
+        view.addSubview(hourlyCellName)
+        
+        NSLayoutConstraint.activate([
+            hourlyCellName.topAnchor.constraint(equalTo: currentWeather.bottomAnchor, constant: 30),
+            hourlyCellName.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            hourlyCellName.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            hourlyCellName.heightAnchor.constraint(equalToConstant: 15)
+        ])
+    }
+    
+    private func setupHourlyCollectionView() {
+            view.addSubview(hourlyContainerView)
+            
+            hourlyContainerView.addSubview(hourlyCollectionView)
+            
+            NSLayoutConstraint.activate([
+                hourlyContainerView.topAnchor.constraint(equalTo: hourlyCellName.bottomAnchor, constant: 4),
+                hourlyContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+                hourlyContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15),
+                hourlyContainerView.heightAnchor.constraint(equalToConstant: 100)
+            ])
+            
+            NSLayoutConstraint.activate([
+                hourlyCollectionView.topAnchor.constraint(equalTo: hourlyContainerView.topAnchor),
+                hourlyCollectionView.bottomAnchor.constraint(equalTo: hourlyContainerView.bottomAnchor),
+                hourlyCollectionView.leadingAnchor.constraint(equalTo: hourlyContainerView.leadingAnchor),
+                hourlyCollectionView.trailingAnchor.constraint(equalTo: hourlyContainerView.trailingAnchor)
+            ])
+        }
     
     private func setupSearchBar() {
         view.addSubview(searchBar)
@@ -129,7 +168,6 @@ class WeatherViewController: UIViewController {
             self?.viewModel.currentCity = placemarks?.first?.locality ?? cityName
         }
     }
-
     
     func showToast(message: String, duration: TimeInterval = 2.0) {
         let toastLabel = UILabel()
@@ -191,26 +229,19 @@ class WeatherViewController: UIViewController {
     }
 }
 
-// MARK: - UIPageViewControllerDataSource
-extension WeatherViewController: UIPageViewControllerDataSource {
-    
-    func pageViewController(_ pvc: UIPageViewController, viewControllerBefore vc: UIViewController) -> UIViewController? {
-        guard let index = pages.firstIndex(of: vc), index > 0 else { return nil }
-        return pages[index - 1]
+extension WeatherViewController: UICollectionViewDataSource {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return viewModel.hourlyWeather.count
     }
-    
-    func pageViewController(_ pvc: UIPageViewController, viewControllerAfter vc: UIViewController) -> UIViewController? {
-        guard let index = pages.firstIndex(of: vc), index < pages.count - 1 else { return nil }
-        return pages[index + 1]
-    }
-}
 
-// MARK: - UIPageViewControllerDelegate
-extension WeatherViewController: UIPageViewControllerDelegate {
-    func pageViewController(_ pvc: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
-        guard completed, let currentVC = pvc.viewControllers?.first else { return }
-        
-        view.backgroundColor = currentVC.view.backgroundColor
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: HourlyForecastCell.reuseIdentifier, for: indexPath) as! HourlyForecastCell
+        let forecast = viewModel.hourlyWeather[indexPath.item]
+        let time = viewModel.timeString(from: forecast.time)
+        let temp = "\(Int(forecast.data.instant.details.airTemperature))°"
+        let icon = UIImage(systemName: viewModel.systemImageName(for: forecast.data.next1Hours?.summary?.symbolCode))
+        cell.configure(time: time, icon: icon, temperature: temp)
+        return cell
     }
 }
 
@@ -238,7 +269,6 @@ extension WeatherViewController: CLLocationManagerDelegate {
             let lon = location.coordinate.longitude
             viewModel.loadWeather(for: lat, lon: lon)
 
-            // Reverse geocode for city name
             CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, error in
                 if let city = placemarks?.first?.locality {
                     self?.viewModel.currentCity = city

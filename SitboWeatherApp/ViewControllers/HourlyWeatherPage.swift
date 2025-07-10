@@ -6,7 +6,6 @@
 //
 
 
-
 import UIKit
 
 class HourlyWeatherPage: UIViewController {
@@ -27,11 +26,11 @@ class HourlyWeatherPage: UIViewController {
         tempLabel.text = temperature
         iconView.image = UIImage(systemName: iconName)
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -42,12 +41,12 @@ class HourlyWeatherPage: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
-
+        
         timeLabel.font = .systemFont(ofSize: 24, weight: .medium)
         tempLabel.font = .systemFont(ofSize: 48, weight: .bold)
         tempLabel.textColor = .white
         timeLabel.textColor = .white
-
+        
         NSLayoutConstraint.activate([
             iconView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             iconView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20),
