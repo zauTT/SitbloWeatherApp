@@ -19,9 +19,5 @@
 			</array>
 		</dict>
 	</dict>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>We use your location to fetch weather info.</string>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>We use your location to fetch weather info.</string>
 </dict>
 </plist>
