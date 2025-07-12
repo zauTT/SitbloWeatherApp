@@ -11,36 +11,38 @@ class DailyForecastCell: UICollectionViewCell {
     
     static let reuseIdentifier = "DailyForecastCell"
     
+    private let temperatureBar = TemperatureBarView()
+
     private let weekLabel: UILabel = {
-        let weekLabel = UILabel()
-        weekLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        weekLabel.textColor = .label
-        return weekLabel
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 18, weight: .medium)
+        label.textColor = .label
+        return label
     }()
     
     private let weatherIconView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
+        imageView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         return imageView
     }()
     
     private let lowTempLabel: UILabel = {
-        let lowTempLabel = UILabel()
-        lowTempLabel.font = .systemFont(ofSize: 14, weight: .light)
-        lowTempLabel.textColor = .label
-        return lowTempLabel
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 18, weight: .light)
+        label.textColor = .label
+        return label
     }()
     
     private let highTempLabel: UILabel = {
-        let highTempLabel = UILabel()
-        highTempLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        highTempLabel.textColor = .label
-        return highTempLabel
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 18, weight: .regular)
+        label.textColor = .label
+        return label
     }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
         setupLayout()
     }
     
@@ -49,30 +51,51 @@ class DailyForecastCell: UICollectionViewCell {
     }
     
     private func setupLayout() {
-        let stackView = UIStackView(arrangedSubviews: [weekLabel, weatherIconView, lowTempLabel, highTempLabel])
-        stackView.axis = .horizontal
-        stackView.spacing = 8
-        stackView.alignment = .center
-        stackView.distribution = .fillProportionally
-        
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(stackView)
-        
+        weekLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        weatherIconView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        lowTempLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        highTempLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        temperatureBar.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+        let infoStack = UIStackView(arrangedSubviews: [
+            weatherIconView,
+            lowTempLabel,
+            temperatureBar,
+            highTempLabel
+        ])
+        infoStack.axis = .horizontal
+        infoStack.spacing = 30
+        infoStack.alignment = .center
+        infoStack.distribution = .fill
+
+        let mainStack = UIStackView(arrangedSubviews: [weekLabel, infoStack])
+        mainStack.axis = .horizontal
+        mainStack.spacing = 16
+        mainStack.alignment = .center
+        mainStack.distribution = .fill
+
+        contentView.addSubview(mainStack)
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        temperatureBar.translatesAutoresizingMaskIntoConstraints = false
+
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
-            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
-            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5),
-            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -5),
-            
-            weatherIconView.widthAnchor.constraint(equalToConstant: 25),
-            weatherIconView.heightAnchor.constraint(equalToConstant: 25),
+            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
+            mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
+            mainStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+
+            weatherIconView.widthAnchor.constraint(equalToConstant: 28),
+            weatherIconView.heightAnchor.constraint(equalToConstant: 28),
+            temperatureBar.heightAnchor.constraint(equalToConstant: 4),
+            temperatureBar.widthAnchor.constraint(equalToConstant: 100)
         ])
     }
     
-    func configure(day: String, icon: UIImage?, lowTemp: String, highTemp: String) {
+    func configure(day: String, icon: UIImage?, lowTemp: String, highTemp: String, min: Double, max: Double, current: Double) {
         weekLabel.text = day
         weatherIconView.image = icon
         lowTempLabel.text = lowTemp
         highTempLabel.text = highTemp
+        temperatureBar.configure(min: min, max: max, current: current)
     }
 }

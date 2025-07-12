@@ -11,6 +11,8 @@ import UIKit
 
 class WeatherViewModel {
     var hourlyWeather: [TimeSeries] = []
+    var dailyWeather: [DailyForecast] = []
+
     var currentCity: String = "Tbilisi"
     var onUpdate: (() -> Void)?
     
@@ -31,6 +33,7 @@ class WeatherViewModel {
                     allEntries = self?.filterUpcomingHours(from: allEntries) ?? []
                     
                     self?.hourlyWeather = Array(allEntries.prefix(24))
+                    self?.dailyWeather = self?.generateDailyForecasts(from: allEntries) ?? []
                     
                     self?.onUpdate?()
                     
@@ -115,5 +118,37 @@ class WeatherViewModel {
             return "cloud.fill"
         }
     }
+    
+    private func generateDailyForecasts(from entries: [TimeSeries]) -> [DailyForecast] {
+        let formatter = ISO8601DateFormatter()
+        let grouped = Dictionary(grouping: entries) { (entry) -> Date? in
+            guard let date = formatter.date(from: entry.time) else { return nil }
+            return Calendar.current.startOfDay(for: date)
+        }
+        
+        var forecasts: [DailyForecast] = []
+        
+        for (dateOpt, dayEntries) in grouped {
+            guard let date = dateOpt else { continue }
+            
+            let temps = dayEntries.map { $0.data.instant.details.airTemperature }
+            let minTemp = temps.min() ?? 0
+            let maxTemp = temps.max() ?? 0
+            
+            let midEntry = dayEntries[dayEntries.count / 2]
+            let symbolCode = midEntry.data.next1Hours?.summary?.symbolCode ?? "cloud.fill"
+            
+            forecasts.append(DailyForecast(date: date, symbolCode: symbolCode, minTemp: minTemp, maxTemp: maxTemp))
+        }
+
+        return forecasts.sorted { $0.date < $1.date }
+    }
+    
+    func weekdayString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter.string(from: date)
+    }
+
 }
 

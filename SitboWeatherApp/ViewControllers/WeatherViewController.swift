@@ -16,7 +16,7 @@ class WeatherViewController: UIViewController {
     
     private let hourlyCellName: UILabel = {
        let name = UILabel()
-        name.font = UIFont.systemFont(ofSize: 14, weight: .bold)
+        name.font = UIFont.systemFont(ofSize: 14, weight: .thin)
         name.textColor = .label
         name.text = "Hourly Forecast"
         name.textAlignment = .center
@@ -43,6 +43,28 @@ class WeatherViewController: UIViewController {
         cv.backgroundColor = .clear
         return cv
     }()
+    
+    private let dailyTitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "10-Day Forecast"
+        label.font = .systemFont(ofSize: 14, weight: .thin)
+        label.textColor = .label
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let dailyCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        layout.minimumLineSpacing = 8
+        layout.itemSize = CGSize(width: UIScreen.main.bounds.width - 32, height: 30)
+        
+        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        cv.translatesAutoresizingMaskIntoConstraints = false
+        cv.backgroundColor = .clear
+        return cv
+    }()
 
     private let searchBar: UISearchBar = {
         let sb = UISearchBar()
@@ -60,18 +82,24 @@ class WeatherViewController: UIViewController {
         setupHourlyCellName()
         setupHourlyCollectionView()
         hourlyCollectionView.dataSource = self
-
+        
         setupSearchBar()
+        setupDailyTitleLabel()
+        setupDailyCollectionView()
+        dailyCollectionView.dataSource = self
+        
         setupLocationManager()
         
         viewModel.onUpdate = { [weak self] in
             DispatchQueue.main.async {
                 self?.updateCurrentWeatherUI()
                 self?.hourlyCollectionView.reloadData()
+                self?.dailyCollectionView.reloadData()
             }
         }
         
         hourlyCollectionView.register(HourlyForecastCell.self, forCellWithReuseIdentifier: HourlyForecastCell.reuseIdentifier)
+        dailyCollectionView.register(DailyForecastCell.self, forCellWithReuseIdentifier: DailyForecastCell.reuseIdentifier)
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -135,6 +163,29 @@ class WeatherViewController: UIViewController {
                 hourlyCollectionView.trailingAnchor.constraint(equalTo: hourlyContainerView.trailingAnchor)
             ])
         }
+    
+    private func setupDailyTitleLabel() {
+        view.addSubview(dailyTitleLabel)
+        
+        NSLayoutConstraint.activate([
+            dailyTitleLabel.topAnchor.constraint(equalTo: hourlyCollectionView.bottomAnchor, constant: 16),
+            dailyTitleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            dailyTitleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            dailyTitleLabel.heightAnchor.constraint(equalToConstant: 30)
+        ])
+    }
+    
+    private func setupDailyCollectionView() {
+        view.addSubview(dailyCollectionView)
+        
+        NSLayoutConstraint.activate([
+            dailyCollectionView.topAnchor.constraint(equalTo: dailyTitleLabel.bottomAnchor, constant: 8),
+            dailyCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+            dailyCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15),
+            dailyCollectionView.bottomAnchor.constraint(equalTo: searchBar.topAnchor, constant: -8)
+        ])
+    }
+
     
     private func setupSearchBar() {
         view.addSubview(searchBar)
@@ -231,17 +282,35 @@ class WeatherViewController: UIViewController {
 
 extension WeatherViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return viewModel.hourlyWeather.count
+        if collectionView == hourlyCollectionView {
+            return viewModel.hourlyWeather.count
+        } else if collectionView == dailyCollectionView {
+            return viewModel.dailyWeather.count
+        }
+        return 0
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: HourlyForecastCell.reuseIdentifier, for: indexPath) as! HourlyForecastCell
-        let forecast = viewModel.hourlyWeather[indexPath.item]
-        let time = viewModel.timeString(from: forecast.time)
-        let temp = "\(Int(forecast.data.instant.details.airTemperature))°"
-        let icon = UIImage(systemName: viewModel.systemImageName(for: forecast.data.next1Hours?.summary?.symbolCode))
-        cell.configure(time: time, icon: icon, temperature: temp)
-        return cell
+        if collectionView == hourlyCollectionView {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: HourlyForecastCell.reuseIdentifier, for: indexPath) as! HourlyForecastCell
+            let forecast = viewModel.hourlyWeather[indexPath.item]
+            let time = viewModel.timeString(from: forecast.time)
+            let temp = "\(Int(forecast.data.instant.details.airTemperature))°"
+            let icon = UIImage(systemName: viewModel.systemImageName(for: forecast.data.next1Hours?.summary?.symbolCode))
+            cell.configure(time: time, icon: icon, temperature: temp)
+            return cell
+        } else {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: DailyForecastCell.reuseIdentifier, for: indexPath) as! DailyForecastCell
+            let forecast = viewModel.dailyWeather[indexPath.item]
+
+            let icon = UIImage(systemName: viewModel.systemImageName(for: forecast.symbolCode))
+            let day = viewModel.weekdayString(from: forecast.date)
+            let min = "\(Int(forecast.minTemp))°"
+            let max = "\(Int(forecast.maxTemp))°"
+
+            cell.configure(day: day, icon: icon, lowTemp: min, highTemp: max, min: forecast.minTemp, max: forecast.maxTemp, current: forecast.maxTemp)
+            return cell
+        }
     }
 }
 

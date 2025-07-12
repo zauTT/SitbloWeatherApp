@@ -20,6 +20,16 @@ struct TimeSeries: Decodable {
     let data: WeatherData
 }
 
+struct DailyForecast {
+    let date: Date
+    let symbolCode: String
+    let minTemp: Double
+    let maxTemp: Double
+    var avgTemp: Double {
+        (minTemp + maxTemp) / 2
+    }
+}
+
 struct WeatherData: Decodable {
     let instant: InstantDetails
     let next1Hours: ForecastContainer?
