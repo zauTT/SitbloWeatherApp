@@ -64,7 +64,7 @@ class DailyForecastCell: UICollectionViewCell {
             highTempLabel
         ])
         infoStack.axis = .horizontal
-        infoStack.spacing = 30
+        infoStack.spacing = 25
         infoStack.alignment = .center
         infoStack.distribution = .fill
 
@@ -87,7 +87,7 @@ class DailyForecastCell: UICollectionViewCell {
             weatherIconView.widthAnchor.constraint(equalToConstant: 28),
             weatherIconView.heightAnchor.constraint(equalToConstant: 28),
             temperatureBar.heightAnchor.constraint(equalToConstant: 4),
-            temperatureBar.widthAnchor.constraint(equalToConstant: 100)
+            temperatureBar.widthAnchor.constraint(equalToConstant: 95)
         ])
     }
     
